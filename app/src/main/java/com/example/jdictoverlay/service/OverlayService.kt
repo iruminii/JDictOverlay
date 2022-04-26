@@ -75,6 +75,9 @@ class OverlayService : LifecycleService() {
     private var paddingx : Double ?= null
     private var paddingy : Double ?= null
 
+    // update layoutparams
+    private var overlayWindowLayoutUpdateParam: WindowManager.LayoutParams ?= null
+
     // get height of the searchbar and if theres anything inside it
     private var height : Int ?= null
     private var width : Int ?= null
@@ -183,6 +186,8 @@ class OverlayService : LifecycleService() {
         // and window params
         windowManager?.addView(overlaySearchView, overlayWindowLayoutParam)
 
+        overlayWindowLayoutUpdateParam = overlayWindowLayoutParam
+
         minimizeBtn!!.setOnClickListener(object : DoubleClickListener() {
 
             override fun onDoubleClick() {
@@ -205,10 +210,6 @@ class OverlayService : LifecycleService() {
         })
     }
 
-    private fun init() {
-
-    }
-
     private fun openCloseLayout(button: MaterialButton) {
         var drawable : Drawable?= null
         // layout is open, so shows close before click
@@ -228,12 +229,12 @@ class OverlayService : LifecycleService() {
 
 
             // update view window to be as big as the open close button
-            val overlayWindowLayoutUpdateParam: WindowManager.LayoutParams = overlayWindowLayoutParam as WindowManager.LayoutParams
+            overlayWindowLayoutUpdateParam = overlayWindowLayoutParam as WindowManager.LayoutParams
             overlayWindowLayoutUpdateParam?.width = btnWidth!!.plus(paddingx!!).toInt()
             overlayWindowLayoutUpdateParam?.height = btnHeight!!.plus(paddingy!!).toInt()
-            overlayWindowLayoutUpdateParam.gravity = Gravity.TOP or Gravity.START
-            overlayWindowLayoutUpdateParam.x = 0
-            overlayWindowLayoutUpdateParam.y = 0
+            overlayWindowLayoutUpdateParam?.gravity = Gravity.TOP or Gravity.START
+            overlayWindowLayoutUpdateParam?.x = 0
+            overlayWindowLayoutUpdateParam?.y = 0
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
             if(detailIsOpen) {
                 windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
@@ -250,12 +251,12 @@ class OverlayService : LifecycleService() {
 
             // update view window to be the width of the screen and
             // height of up to X entries in the recyclerview
-            val overlayWindowLayoutUpdateParam: WindowManager.LayoutParams = overlayWindowLayoutParam as WindowManager.LayoutParams
+            overlayWindowLayoutUpdateParam = overlayWindowLayoutParam as WindowManager.LayoutParams
             overlayWindowLayoutUpdateParam?.width = width!!
             overlayWindowLayoutUpdateParam?.height = (height!! * 0.30f).toInt()
-            overlayWindowLayoutUpdateParam.gravity = Gravity.TOP or Gravity.START
-            overlayWindowLayoutUpdateParam.x = 0
-            overlayWindowLayoutUpdateParam.y = 0
+            overlayWindowLayoutUpdateParam?.gravity = Gravity.TOP or Gravity.START
+            overlayWindowLayoutUpdateParam?.x = 0
+            overlayWindowLayoutUpdateParam?.y = 0
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
             if(detailIsOpen) {
                 windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
@@ -362,6 +363,26 @@ class OverlayService : LifecycleService() {
         windowManager?.removeView(detailView)
         detailIsOpen = false
     }
+    private fun orientationLayout() {
+        // get measurements of device screen
+        val metrics = resources.displayMetrics
+        width = metrics.widthPixels
+        height = metrics.heightPixels
+        Log.d("Hi", "width = " + width + "/nheight = " + height)
+        overlayWindowLayoutUpdateParam?.width = width
+        if(isOpen) {
+            overlayWindowLayoutUpdateParam?.height = (height!! * 0.30f).toInt()
+        }
+        else {
+            overlayWindowLayoutUpdateParam?.height = btnHeight!!.plus(paddingy!!).toInt()
+        }
+        windowManager!!.addView(overlaySearchView, overlayWindowLayoutUpdateParam)
+        if(detailIsOpen) {
+            windowManager!!.addView(detailView, overlayWindowLayoutUpdateParam)
+            detailView?.bringToFront()
+        }
+
+    }
     // It is called when stopService()
     // method is called in MainActivity
     override fun onDestroy() {
@@ -372,7 +393,13 @@ class OverlayService : LifecycleService() {
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
+        Log.d("Hi", "CONFIG")
+        windowManager!!.removeView(overlaySearchView)
+        if(detailIsOpen) {
+            windowManager!!.removeView(detailView)
+        }
         super.onConfigurationChanged(newConfig)
+        orientationLayout()
     }
 
 }

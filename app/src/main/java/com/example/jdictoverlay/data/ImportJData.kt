@@ -16,10 +16,11 @@ class ImportJData {
 
     fun getDataFromFile() : List<DictEntry> = runBlocking {
         Log.d("Hi", "fillDatabase")
-
+        val test = ParseJData().parse(inputStream)
         // get all values from XML and save in list
-        //return ParseXmlFile().parse(inputStream) ?: emptyList()
-        return@runBlocking ParseJData().parse(inputStream) ?: emptyList()
+        inputStream.close()
+        return@runBlocking test ?: emptyList()
+        //return@runBlocking ParseJData().parse(inputStream) ?: emptyList()
     }
 
 }

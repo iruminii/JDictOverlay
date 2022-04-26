@@ -52,7 +52,6 @@ class ParseJData {
             parser.nextToken()
             return readFeed(parser)
         }
-        inputStream.close()
     }
 
     @Throws(XmlPullParserException::class, IOException::class)

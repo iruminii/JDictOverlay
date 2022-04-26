@@ -26,45 +26,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        /*
-        setContentView(R.layout.activity_main)
 
-        minimizeBtn = findViewById(R.id.close_open)
-
-        minimizeBtn?.setOnClickListener {
-            Log.d("Hi", "CLICKED")
-            attemptstartService()
-            Log.d("Hi", "ATTEMPTED")
-        }*/
         attemptstartService()
-
-        /*
-        setContentView(R.layout.search_layout)
-
-        val list: List<String> = listOf("Hi1", "Hi2", "Hi3")
-        listView = findViewById<RecyclerView>(R.id.recycler_view)
-        listView?.adapter = SearchListAdapter(this, list)
-        listView?.setHasFixedSize(true)
-
-        minimizeBtn = findViewById(R.id.close_open)
-        searchView = findViewById(R.id.search_bar)
-        writeBtn = findViewById(R.id.write_search_input)
-        /*
-        minimizeBtn?.setOnClickListener {
-            openCloseLayout(minimizeBtn!!)
-       }*/
-        minimizeBtn!!.setOnClickListener(object : DoubleClickListener() {
-            override fun onDoubleClick() {
-                Log.d("HI", "ONDOUBLE")
-            }
-
-            override fun onSingleClick() {
-                Log.d("HI", "ONSINGLE")
-                openCloseLayout(minimizeBtn!!)
-            }
-
-        })
-        listView */
     }
 
     private fun attemptstartService() {
