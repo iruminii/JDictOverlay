@@ -37,7 +37,7 @@ class JDictRepository (
     val mappedEntries: LiveData<List<DictEntry>> = Transformations.switchMap(searchStringLiveData) {
             string ->
         if(TextUtils.isEmpty(string)) {
-            Log.d("VIEWMODEL", "ISEMPTY")
+            //Log.d("VIEWMODEL", "ISEMPTY")
             jDictDao.getNothing().asLiveData()
             //allEntries
         }

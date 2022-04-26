@@ -8,8 +8,10 @@ import android.graphics.drawable.Drawable
 import android.os.*
 import android.util.Log
 import android.view.*
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.SearchView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
@@ -17,11 +19,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.jdictoverlay.BaseApplication
 import com.example.jdictoverlay.R
+import com.example.jdictoverlay.databinding.DetailLayoutBinding
+import com.example.jdictoverlay.databinding.ListItemSearchLayoutBinding
 import com.example.jdictoverlay.databinding.ListItemSearchLayoutBindingImpl
+import com.example.jdictoverlay.model.DetailEntry
 import com.example.jdictoverlay.model.DictEntry
 import com.example.jdictoverlay.repository.JDictRepository
-import com.example.jdictoverlay.ui.adapter.JDictListAdapter
-import com.example.jdictoverlay.ui.adapter.SearchListAdapter
+import com.example.jdictoverlay.ui.adapter.*
 import com.google.android.material.button.MaterialButton
 import kotlin.math.ceil
 import kotlin.math.min
@@ -38,11 +42,28 @@ class OverlayService : LifecycleService() {
     private var LAYOUT_TYPE: Int? = null
     private var overlayWindowLayoutParam: WindowManager.LayoutParams ?= null
 
+    // detail
+    private var detailView: View? = null
+    private var detailMinimizeBtn: MaterialButton? = null
+    private var detailBackBtn: MaterialButton ?= null
+    private var detailListView: RecyclerView?= null
+    private var _dbinding: DetailLayoutBinding ?= null
+    private val dbinding get() = _dbinding!!
+    private lateinit var dictEntry: DictEntry
+        // detail view is not inflated on opening
+    private var detailIsOpen = false
+
+    // search layout
     private var overlaySearchView: ViewGroup? = null
     private var minimizeBtn: MaterialButton? = null
     private var searchView: SearchView?= null
     private var writeBtn: MaterialButton?= null
     private var searchListView: RecyclerView?= null
+
+    // binding layout items
+    private var _sbinding: ListItemSearchLayoutBinding? = null
+
+    private val sbinding get() = _sbinding!!
     // service opens with layout open
     private var isOpen = true
 
@@ -57,10 +78,8 @@ class OverlayService : LifecycleService() {
     private var height : Int ?= null
     private var width : Int ?= null
 
-    //..................................
-    private var list: List<String> = listOf("Hi1", "Hi2", "Hi3", "Hi4")
-    //..................................
     private var repositoryDb : JDictRepository ?= null
+    private var entryID: String ?= null
 
 
     override fun onCreate() {
@@ -89,30 +108,46 @@ class OverlayService : LifecycleService() {
         val inflater = LayoutInflater.from(baseContext)
         overlaySearchView = inflater.inflate(R.layout.search_layout, null) as ViewGroup
 
-        val searchAdapter = JDictListAdapter { dictEntry ->
-            val action = searchView?.setOnClickListener(this)
-
-        }
-
-        // get entries from db
-        repositoryDb = JDictRepository((this.application as BaseApplication).database.jDictDao())
-
-        // recyclerview list adapter for entries in db
-        repositoryDb!!.mappedEntries.observe(this) {
-            dictEntry -> dictEntry.let {
-                adapter.submitList(it)
-        }
-        }
-
         minimizeBtn = overlaySearchView?.findViewById(R.id.close_open)
         searchView = overlaySearchView?.findViewById(R.id.search_bar)
         writeBtn = overlaySearchView?.findViewById(R.id.write_search_input)
 
+        searchView?.setImeOptions(searchView!!.imeOptions or EditorInfo.IME_FLAG_NO_EXTRACT_UI)
+        searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(p0: String?): Boolean {
+                Log.d("LISTFRAG", "change" + p0)
+                repositoryDb?.searchChanged(p0?:"")
+                return false
+            }
+
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                Log.d("LISTFRAG", "submit" + p0)
+
+                repositoryDb?.searchChanged(p0?:"")
+                return false
+            }
+        })
         //..................................
         searchListView = overlaySearchView?.findViewById<RecyclerView>(R.id.recycler_view)
         searchListView?.layoutManager = LinearLayoutManager(this)
         //listView?.adapter = SearchListAdapter(this, list)
 
+        val searchAdapter = JDictListAdapter { dictEntry ->
+            openDetails(dictEntry.id)
+            //Toast.makeText(applicationContext, "${dictEntry.reading}", Toast.LENGTH_SHORT).show()
+        }
+
+        // get entries from db
+        repositoryDb = JDictRepository((this.application as BaseApplication).database.jDictDao())
+
+        Log.d("Hi", "repositoryDb = " + repositoryDb!!.mappedEntries.value)
+        // recyclerview list adapter for entries in db
+        repositoryDb!!.mappedEntries.observe(this) {
+            dictEntry -> dictEntry.let {
+                searchAdapter.submitList(it)
+            }
+        }
+        searchListView!!.adapter = searchAdapter
         //..................................
 
 
@@ -147,58 +182,7 @@ class OverlayService : LifecycleService() {
         // inflate the view with search_layout viewgroup
         // and window params
         windowManager?.addView(overlaySearchView, overlayWindowLayoutParam)
-/*
-        overlayView!!.setOnTouchListener(object : View.OnTouchListener {
-            var x:  Double ?= null
-            var y: Double?= null
-            var mx: Double?= null
-            var my: Double?= null
-            var minx: Double ?= null
-            var miny: Double ?= null
 
-
-            override fun onTouch(v: View?, m: MotionEvent?): Boolean {
-                // get touch event coords
-                mx = m?.getRawX()?.toDouble()
-                my = m?.getRawY()?.toDouble()
-
-                // if overlay views are visible, get size of the window
-                if(isOpen) {
-                    x = overlayWindowLayoutParam?.width?.toDouble()
-                    y = overlayWindowLayoutParam?.height?.toDouble()
-                    minx = 0.0
-                    miny = 0.0
-                }
-
-                // if overlay views are hidden, get size of only the open/close button
-                else {
-                    x = btnWidth?.plus(paddingx!!)
-                    y = btnHeight?.plus(paddingy!!)
-                    minx = paddingx?.toDouble()
-                    miny = paddingy?.toDouble()
-                    /*
-                    overlayView?.post {
-                        // actual width and height of button
-                        x = minimizeBtn?.width?.toDouble()?.plus(paddingx!!)
-                        y = minimizeBtn?.height?.toDouble()?.plus(paddingy!!)
-                        minx = paddingx?.toDouble()
-                        miny = paddingy?.toDouble()
-                    }*/
-                }
-
-                if(minx!! < mx!! && mx!! < x!! &&
-                    miny!! < my!! && my!! < y!!) {
-                    Log.d("HI", "INSIDE TOUCH EVENT")
-                }
-                else {
-
-                    Log.d("HI", "OUTSIDE TOUCH EVENT")
-                    return false
-                }
-                return true
-            }
-        })
-*/
         minimizeBtn!!.setOnClickListener(object : DoubleClickListener() {
 
             override fun onDoubleClick() {
@@ -218,7 +202,7 @@ class OverlayService : LifecycleService() {
         })
     }
 
-    fun openCloseLayout(button: MaterialButton) {
+    private fun openCloseLayout(button: MaterialButton) {
         var drawable : Drawable?= null
         // layout is open, so shows close before click
         // closing layout with onClick
@@ -233,7 +217,7 @@ class OverlayService : LifecycleService() {
                 getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
             // The soft keyboard slides back in
-            inputMethodManager.hideSoftInputFromWindow(overlaySearchView!!.applicationWindowToken, 0)
+            inputMethodManager.hideSoftInputFromWindow(overlaySearchView?.applicationWindowToken, 0)
 
 
             // update view window to be as big as the open close button
@@ -244,15 +228,18 @@ class OverlayService : LifecycleService() {
             overlayWindowLayoutUpdateParam.x = 0
             overlayWindowLayoutUpdateParam.y = 0
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
+            if(detailIsOpen) {
+                windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
+            }
         }
         // layout is closed, shows open before click
         // opening layout with onClick
         else {
             drawable = ContextCompat.getDrawable(minimizeBtn!!.context, R.drawable.ic_close_icon)
             Log.d("HI", "IS CLOSED, WILL OPEN")
-            searchView?.visibility = View.VISIBLE
-            writeBtn?.visibility = View.VISIBLE
-            searchListView?.visibility = View.VISIBLE
+            //searchView?.visibility = View.VISIBLE
+            //writeBtn?.visibility = View.VISIBLE
+            //searchListView?.visibility = View.VISIBLE
 
             // update view window to be the width of the screen and
             // height of up to X entries in the recyclerview
@@ -263,11 +250,111 @@ class OverlayService : LifecycleService() {
             overlayWindowLayoutUpdateParam.x = 0
             overlayWindowLayoutUpdateParam.y = 0
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
+            if(detailIsOpen) {
+                windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
+            }
         }
         isOpen = !isOpen
-        minimizeBtn?.icon = drawable
+        minimizeBtn!!.icon = drawable
+        if(detailIsOpen){
+            detailMinimizeBtn!!.icon = drawable
+        }
     }
 
+    private fun openDetails(id: String) {
+        Log.d("HI", "id = " + id)
+        detailView = LayoutInflater.from(this)
+            .inflate(R.layout.detail_layout, overlaySearchView, false)
+
+        detailListView?.layoutManager = LinearLayoutManager(this)
+
+        windowManager?.addView(detailView, overlayWindowLayoutParam)
+        detailView?.bringToFront()
+        detailIsOpen = true
+
+        detailBackBtn = detailView?.findViewById(R.id.back_to_list)
+        detailMinimizeBtn = detailView?.findViewById(R.id.detail_close_open)
+
+        // recyclerview list adapter for selected entry
+        repositoryDb?.getEntryById(id)?.observe(this) {
+            selectedEntry ->
+            dictEntry = selectedEntry
+            entryToList(dictEntry)
+        }
+
+        detailBackBtn?.setOnClickListener {
+            Log.d("Hi", "back clicked")
+            backToSearch()
+        }
+
+        detailMinimizeBtn!!.setOnClickListener(object : DoubleClickListener() {
+
+            override fun onDoubleClick() {
+                Log.d("HI", "ONDOUBLE")
+                // stopSelf() method is used to stop the service if
+                // it was previously started
+                stopSelf()
+
+                // The window is removed from the screen
+                windowManager!!.removeView(detailView)
+            }
+
+            override fun onSingleClick() {
+                Log.d("HI", "ONSINGLE")
+                openCloseLayout(detailMinimizeBtn!!)
+            }
+        })
+
+    }
+    private fun entryToList(dictEntry: DictEntry){
+        var detailEntry = mutableListOf<DetailEntry>()
+
+        if(!dictEntry.kanji.isNullOrEmpty()) {
+            for (kanji in dictEntry.kanji) {
+                detailEntry.add(DetailEntry(VIEW_TYPE_KANJI, kanji))
+            }
+        }
+        if(!dictEntry.reading.isNullOrEmpty()) {
+            for (reading in dictEntry.reading) {
+                detailEntry.add(DetailEntry(VIEW_TYPE_READING, reading))
+            }
+        }
+        if(!dictEntry.pos.isNullOrEmpty()) {
+            for (pos in dictEntry.pos) {
+                detailEntry.add(DetailEntry(VIEW_TYPE_POS, pos))
+            }
+        }
+        if(!dictEntry.dial.isNullOrEmpty()) {
+            detailEntry.add(DetailEntry(VIEW_TYPE_DIAL, dictEntry.dial))
+        }
+        if(!dictEntry.gloss.isNullOrEmpty()) {
+            for (gloss in dictEntry.gloss) {
+                detailEntry.add(DetailEntry(VIEW_TYPE_GLOSS, gloss))
+            }
+        }
+        if(!dictEntry.ex_text.isNullOrEmpty()) {
+            detailEntry.add(
+                DetailEntry(
+                    VIEW_TYPE_EXAMPLE,
+                    dictEntry.ex_text,
+                    dictEntry.ex_sent_j,
+                    dictEntry.ex_sent_e
+                )
+            )
+        }
+
+        var detailAdapter = DetailListAdapter(detailEntry.toList())
+
+        detailListView = detailView?.findViewById(R.id.recycler_view_detail)
+        detailListView?.adapter = detailAdapter
+
+        detailAdapter.submitList(detailEntry)
+    }
+
+    private fun backToSearch() {
+        windowManager?.removeView(detailView)
+        detailIsOpen = false
+    }
     // It is called when stopService()
     // method is called in MainActivity
     override fun onDestroy() {

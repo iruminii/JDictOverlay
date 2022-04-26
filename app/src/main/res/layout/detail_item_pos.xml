@@ -21,11 +21,13 @@
         <TextView
             android:id="@+id/detail_pos"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="20dp"
             android:layout_marginTop="16dp"
-            app:layout_constraintTop_toTopOf="parent"
+            android:fontFamily="sans-serif"
+            android:textSize="16sp"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
             app:layout_constraintStart_toStartOf="parent"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
+            app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
