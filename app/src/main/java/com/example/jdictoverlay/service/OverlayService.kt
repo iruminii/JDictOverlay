@@ -3,6 +3,7 @@ package com.example.jdictoverlay.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.os.*
@@ -81,11 +82,10 @@ class OverlayService : LifecycleService() {
     private var repositoryDb : JDictRepository ?= null
     private var entryID: String ?= null
 
-
     override fun onCreate() {
         super.onCreate()
 
-        Log.d("Hi", "OVERLAY SERVICE STARTED")
+        Log.d("Hi", "OVERLAY SERVICE ONCREATE")
 
         // get measurements of device screen
         val metrics = resources.displayMetrics
@@ -168,7 +168,7 @@ class OverlayService : LifecycleService() {
         // set it to translucent
         overlayWindowLayoutParam = WindowManager.LayoutParams(
             width!!,
-            (height!! * 0.40f).toInt(),
+            (height!! * 0.30f).toInt(),
             LAYOUT_TYPE!!,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -192,6 +192,9 @@ class OverlayService : LifecycleService() {
                 stopSelf()
 
                 // The window is removed from the screen
+                if(detailIsOpen){
+                    windowManager!!.removeView(detailView)
+                }
                 windowManager!!.removeView(overlaySearchView)
             }
 
@@ -200,6 +203,10 @@ class OverlayService : LifecycleService() {
                 openCloseLayout(minimizeBtn!!)
             }
         })
+    }
+
+    private fun init() {
+
     }
 
     private fun openCloseLayout(button: MaterialButton) {
@@ -245,7 +252,7 @@ class OverlayService : LifecycleService() {
             // height of up to X entries in the recyclerview
             val overlayWindowLayoutUpdateParam: WindowManager.LayoutParams = overlayWindowLayoutParam as WindowManager.LayoutParams
             overlayWindowLayoutUpdateParam?.width = width!!
-            overlayWindowLayoutUpdateParam?.height = (height!! * 0.40f).toInt()
+            overlayWindowLayoutUpdateParam?.height = (height!! * 0.30f).toInt()
             overlayWindowLayoutUpdateParam.gravity = Gravity.TOP or Gravity.START
             overlayWindowLayoutUpdateParam.x = 0
             overlayWindowLayoutUpdateParam.y = 0
@@ -362,6 +369,10 @@ class OverlayService : LifecycleService() {
         stopSelf()
         // Window is removed from the screen
         windowManager!!.removeView(overlaySearchView)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
     }
 
 }
