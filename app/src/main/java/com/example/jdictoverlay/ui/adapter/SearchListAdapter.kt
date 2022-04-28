@@ -1,6 +1,7 @@
 package com.example.jdictoverlay.ui.adapter
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,20 +14,21 @@ class SearchListAdapter(private val context: Context,
                         private val dataset: List<String>) : RecyclerView.Adapter<SearchListAdapter.ViewHolder>() {
 
         class ViewHolder(private val view: View) : RecyclerView.ViewHolder(view) {
-            val textView: TextView = view.findViewById(R.id.word)
-            val text2: TextView = view.findViewById(R.id.definition)
+            val textView: TextView = view.findViewById(R.id.recognized_item)
+            //val text2: TextView = view.findViewById(R.id.definition)
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val adapterLayout = LayoutInflater.from(parent.context)
-            .inflate(R.layout.list_item_search_layout, parent, false)
+            .inflate(R.layout.recognized_item, parent, false)
         return ViewHolder(adapterLayout)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = dataset[position]
+        Log.d("Hi", "item = " + item)
         holder.textView.text = item
-        holder.text2.text = item
+        //holder.text2.text = item
     }
 
     override fun getItemCount(): Int {

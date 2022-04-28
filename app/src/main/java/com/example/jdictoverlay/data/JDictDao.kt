@@ -50,7 +50,12 @@ interface JDictDao {
     fun searchGloss(input: String) : LiveData<List<DictEntry>>
 
     // search all
-    @Query("SELECT * FROM jdict_database WHERE kanji LIKE '%' || :input || '%' OR LOWER(kanji) LIKE LOWER('%' || :input || '%') OR reading LIKE '%' || :input || '%' OR LOWER(reading) LIKE LOWER('%' || :input || '%') OR gloss LIKE '%' || :input || '%' OR LOWER(gloss) LIKE LOWER('%' || :input || '%')")
+    @Query("SELECT * FROM jdict_database WHERE kanji LIKE '%' || :input || '%' " +
+            "OR LOWER(kanji) LIKE LOWER('%' || :input || '%') " +
+            "OR reading LIKE '%' || :input || '%' " +
+            "OR LOWER(reading) LIKE LOWER('%' || :input || '%') " +
+            "OR gloss LIKE '%' || :input || '%' " +
+            "OR LOWER(gloss) LIKE LOWER('%' || :input || '%') ")
     fun searchAll(input: String) : LiveData<List<DictEntry>>
 
     @Insert(onConflict = REPLACE)

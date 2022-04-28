@@ -25,9 +25,13 @@ import com.example.jdictoverlay.databinding.ListItemSearchLayoutBinding
 import com.example.jdictoverlay.databinding.ListItemSearchLayoutBindingImpl
 import com.example.jdictoverlay.model.DetailEntry
 import com.example.jdictoverlay.model.DictEntry
+import com.example.jdictoverlay.recognition.DrawingView
+import com.example.jdictoverlay.recognition.StrokeManager
 import com.example.jdictoverlay.repository.JDictRepository
+import com.example.jdictoverlay.ui.CharacterConverter
 import com.example.jdictoverlay.ui.adapter.*
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.runBlocking
 import kotlin.math.ceil
 import kotlin.math.min
 
@@ -60,6 +64,16 @@ class OverlayService : LifecycleService() {
     private var searchView: SearchView?= null
     private var writeBtn: MaterialButton?= null
     private var searchListView: RecyclerView?= null
+
+    // writing layout
+    private var writingView: View? = null
+    private var drawingView: DrawingView ?= null
+    private var isWritingOpen = false
+    private val strokeManager = StrokeManager()
+    private var recognize_btn : MaterialButton ?= null
+    private var clear_btn : MaterialButton ?= null
+    private var recognizedView : RecyclerView ?= null
+    private var recognizedCandidates : List<String> ?= null
 
     // binding layout items
     private var _sbinding: ListItemSearchLayoutBinding? = null
@@ -115,11 +129,21 @@ class OverlayService : LifecycleService() {
         searchView = overlaySearchView?.findViewById(R.id.search_bar)
         writeBtn = overlaySearchView?.findViewById(R.id.write_search_input)
 
+        writeBtn?.setOnClickListener {
+            if(isWritingOpen) {
+                closeWriting()
+            }
+            else {
+                openWriting()
+            }
+        }
+
         searchView?.setImeOptions(searchView!!.imeOptions or EditorInfo.IME_FLAG_NO_EXTRACT_UI)
         searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
             override fun onQueryTextChange(p0: String?): Boolean {
                 Log.d("LISTFRAG", "change" + p0)
                 repositoryDb?.searchChanged(p0?:"")
+
                 return false
             }
 
@@ -133,20 +157,21 @@ class OverlayService : LifecycleService() {
         //..................................
         searchListView = overlaySearchView?.findViewById<RecyclerView>(R.id.recycler_view)
         searchListView?.layoutManager = LinearLayoutManager(this)
-        //listView?.adapter = SearchListAdapter(this, list)
 
         val searchAdapter = JDictListAdapter { dictEntry ->
             openDetails(dictEntry.id)
-            //Toast.makeText(applicationContext, "${dictEntry.reading}", Toast.LENGTH_SHORT).show()
         }
 
         // get entries from db
         repositoryDb = JDictRepository((this.application as BaseApplication).database.jDictDao())
 
-        Log.d("Hi", "repositoryDb = " + repositoryDb!!.mappedEntries.value)
         // recyclerview list adapter for entries in db
-        repositoryDb!!.mappedEntries.observe(this) {
+        //repositoryDb!!.mappedEntries.observe(this) {
+        repositoryDb!!.mediatorLiveData.observe(this) {
             dictEntry -> dictEntry.let {
+            Log.d("Converter", "test ｱ : Hira ${CharacterConverter().convertToHiragana("ｱ")}")
+            Log.d("Converter", "test ｱ : Kata ${CharacterConverter().convertToFullKatakana("ｱ")}")
+            Log.d("Converter", "test ｱ : HKata ${CharacterConverter().convertToHalfKatakana("ｱ")}")
                 searchAdapter.submitList(it)
             }
         }
@@ -187,6 +212,7 @@ class OverlayService : LifecycleService() {
         windowManager?.addView(overlaySearchView, overlayWindowLayoutParam)
 
         overlayWindowLayoutUpdateParam = overlayWindowLayoutParam
+
 
         minimizeBtn!!.setOnClickListener(object : DoubleClickListener() {
 
@@ -244,11 +270,6 @@ class OverlayService : LifecycleService() {
         // opening layout with onClick
         else {
             drawable = ContextCompat.getDrawable(minimizeBtn!!.context, R.drawable.ic_close_icon)
-            Log.d("HI", "IS CLOSED, WILL OPEN")
-            //searchView?.visibility = View.VISIBLE
-            //writeBtn?.visibility = View.VISIBLE
-            //searchListView?.visibility = View.VISIBLE
-
             // update view window to be the width of the screen and
             // height of up to X entries in the recyclerview
             overlayWindowLayoutUpdateParam = overlayWindowLayoutParam as WindowManager.LayoutParams
@@ -270,7 +291,6 @@ class OverlayService : LifecycleService() {
     }
 
     private fun openDetails(id: String) {
-        Log.d("HI", "id = " + id)
         detailView = LayoutInflater.from(this)
             .inflate(R.layout.detail_layout, overlaySearchView, false)
 
@@ -363,6 +383,90 @@ class OverlayService : LifecycleService() {
         windowManager?.removeView(detailView)
         detailIsOpen = false
     }
+
+    private fun openWriting() {
+        isWritingOpen = true
+        Log.d("Hi", "OPENING WRITING")
+        writingView = LayoutInflater.from(this)
+            .inflate(R.layout.writing_layout, overlaySearchView, false)
+        val density = resources.displayMetrics.density
+        val params = WindowManager.LayoutParams(
+            (ceil(200.times(density)).toInt()),
+            (ceil(200.times(density)).toInt()),
+            LAYOUT_TYPE!!,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            PixelFormat.OPAQUE
+        )
+        params.x = 0
+        params.y =  (ceil(60.times(density)).toInt())
+        params.gravity = Gravity.TOP
+        windowManager?.addView(writingView, params)
+        writingView?.bringToFront()
+
+        recognize_btn = writingView?.findViewById(R.id.recognize_btn)
+        clear_btn = writingView?.findViewById(R.id.clear_btn)
+
+        // recycler view setup
+        recognizedView = writingView?.findViewById(R.id.recognized_list)
+        recognizedView?.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+
+//        recognizedCandidates = listOf("1", "2", "3", "4")
+
+
+        recognize_btn?.setOnClickListener {
+            recognizeWriting()
+        }
+        clear_btn?.setOnClickListener {
+            clearWriting()
+        }
+
+        drawingView = writingView?.findViewById(R.id.drawing_view_canvas)
+        drawingView?.setStrokeManager(strokeManager)
+        strokeManager.setClearCurrentInkAfterRecognition(true)
+        strokeManager.setTriggerRecognitionAfterInput(false)
+        // "ja" is lang code for japanese
+        strokeManager.download()
+    }
+//https://stackoverflow.com/questions/57330766/why-does-my-function-that-calls-an-api-return-an-empty-or-null-value
+    private fun recognizeWriting() {
+
+        strokeManager.recognize() { result ->
+            recognizedCandidates = getRecognitionResults()
+            val recognizedAdapter = RecognizedAdapter { candidate ->
+                Toast.makeText(this, "candidate = " + candidate, Toast.LENGTH_SHORT).show()
+                sendWritingToSearch(candidate)
+            }
+
+            // recyclerview list adapter for entries in db
+            recognizedAdapter.submitList(recognizedCandidates)
+
+            recognizedView!!.adapter = recognizedAdapter
+
+        }
+    }
+    private fun clearWriting() {
+        strokeManager.reset()
+        drawingView?.clear()
+    }
+
+    private fun getRecognitionResults() : List<String>{
+        return strokeManager.getContent()
+    }
+
+    private fun sendWritingToSearch(candidate: String) {
+        val text = searchView?.query.toString()
+        searchView?.setQuery((text + candidate) as CharSequence, false)
+        Log.d("Hi", "THIS IS IN THE SEARCHVIEW $text")
+        Log.d("Hi", "THIS IS THE SETQUERY TEXT " + text + candidate)
+    }
+
+    private fun closeWriting() {
+        isWritingOpen = false
+        windowManager?.removeView(writingView)
+    }
+
     private fun orientationLayout() {
         // get measurements of device screen
         val metrics = resources.displayMetrics
