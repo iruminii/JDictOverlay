@@ -12,7 +12,8 @@ import java.io.InputStream
 class ImportJData {
     //val fileName : String = "src/main/assets/JMDict_first_eleven.xml"
     //val inputStream : InputStream = FileInputStream(fileName!!)
-    val inputStream: InputStream = javaClass.getResourceAsStream("/assets/JMDict_test.xml")
+    //val inputStream: InputStream = javaClass.getResourceAsStream("/assets/JMDict_test.xml")
+    val inputStream: InputStream = javaClass.getResourceAsStream("/assets/JMdict_e_examp.xml")
 
     fun getDataFromFile() : List<DictEntry> = runBlocking {
         Log.d("Hi", "fillDatabase")

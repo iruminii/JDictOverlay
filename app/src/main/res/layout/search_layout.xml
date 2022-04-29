@@ -26,7 +26,8 @@
         android:insetLeft="0dp"
         android:insetTop="0dp"
         android:insetRight="0dp"
-        android:insetBottom="0dp"/>
+        android:insetBottom="0dp"
+        android:backgroundTint="@color/rose"/>
 
     <SearchView
         android:id="@+id/search_bar"
@@ -62,7 +63,8 @@
         android:insetLeft="0dp"
         android:insetTop="0dp"
         android:insetRight="0dp"
-        android:insetBottom="0dp"/>
+        android:insetBottom="0dp"
+        android:backgroundTint="@color/rose"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"

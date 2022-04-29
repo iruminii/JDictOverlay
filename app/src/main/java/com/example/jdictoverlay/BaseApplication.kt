@@ -16,7 +16,5 @@ class BaseApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("Hi", "onCreate BaseApp")
-        Log.d("Hi", database.jDictDao().count().toString())
     }
 }

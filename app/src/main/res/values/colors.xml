@@ -10,4 +10,9 @@
     <color name="gray">#BDBDBD</color>
     <color name="transparent">#00000000</color>
     <color name="offwhite">#80FFFFFF</color>
+    <color name="pink">#FFFFCDD2</color>
+    <color name="dkpink">#FFF58FB1</color>
+    <color name="rose">#FFEF9A9A</color>
+    <color name="lightrose">#FFFFCCCB</color>
+    <color name="dkgray">#FF616161</color>
 </resources>

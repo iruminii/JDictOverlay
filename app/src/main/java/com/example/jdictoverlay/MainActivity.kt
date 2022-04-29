@@ -17,16 +17,8 @@ import com.google.android.material.button.MaterialButton
 
 class MainActivity : AppCompatActivity() {
 
-    private var minimizeBtn: MaterialButton? = null
-    private var searchView: SearchView ?= null
-    private var writeBtn: MaterialButton ?= null
-    private var listView: RecyclerView ?= null
-    // opens with layout open
-    var isOpen = true
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         attemptstartService()
     }
 
@@ -49,7 +41,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("Hi", "REQUEST DISPLAY")
 
             requestOverlayDisplayPermission()
-            //finish()
+            finish()
             //startService()
         }
     }
