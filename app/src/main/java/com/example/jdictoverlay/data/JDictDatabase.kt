@@ -34,13 +34,13 @@ abstract class JDictDatabase : RoomDatabase() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
                             Executors.newSingleThreadExecutor().execute() {
-                                JDictDatabase.INSTANCE?.fillDatabase()
+                                INSTANCE?.fillDatabase()
                             }
                         }
                     })
+                    //.createFromAsset("databases/")
                     .fallbackToDestructiveMigration()
                     .build()
-                //instance.fillDatabase()
                 Log.d("Hi", "database file filleddatabase")
                 INSTANCE = instance
                 return instance

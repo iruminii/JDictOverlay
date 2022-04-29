@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("Hi", "REQUEST DISPLAY")
 
             requestOverlayDisplayPermission()
-            finish()
+            //finish()
             //startService()
         }
     }
