@@ -13,6 +13,7 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.SearchView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.LiveData
@@ -139,7 +140,7 @@ class OverlayService : LifecycleService() {
         }
 
         searchView?.setImeOptions(searchView!!.imeOptions or EditorInfo.IME_FLAG_NO_EXTRACT_UI)
-        searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
+        /*searchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener {
             override fun onQueryTextChange(p0: String?): Boolean {
                 Log.d("LISTFRAG", "change" + p0)
                 repositoryDb?.searchChanged(p0?:"")
@@ -150,6 +151,19 @@ class OverlayService : LifecycleService() {
             override fun onQueryTextSubmit(p0: String?): Boolean {
                 Log.d("LISTFRAG", "submit" + p0)
 
+                repositoryDb?.searchChanged(p0?:"")
+                return false
+            }
+        })*/
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextChange(p0: String?): Boolean {
+                Log.d("LISTFRAG", "change" + p0)
+                repositoryDb?.searchChanged(p0 ?: "")
+                return false
+            }
+
+            override fun onQueryTextSubmit(p0: String?): Boolean {
+                Log.d("LISTFRAG", "submit" + p0)
                 repositoryDb?.searchChanged(p0?:"")
                 return false
             }
@@ -166,8 +180,9 @@ class OverlayService : LifecycleService() {
         repositoryDb = JDictRepository((this.application as BaseApplication).database.jDictDao())
 
         // recyclerview list adapter for entries in db
-        //repositoryDb!!.mappedEntries.observe(this) {
-        repositoryDb!!.mediatorLiveData.observe(this) {
+        repositoryDb!!.mappedEntries.observe(this) {
+        //repositoryDb!!.mediatorLiveData.observe(this) {
+        //repositoryDb!!.scoredEntries.observe(this) {
             dictEntry -> dictEntry.let {
             Log.d("Converter", "test ｱ : Hira ${CharacterConverter().convertToHiragana("ｱ")}")
             Log.d("Converter", "test ｱ : Kata ${CharacterConverter().convertToFullKatakana("ｱ")}")
@@ -198,9 +213,10 @@ class OverlayService : LifecycleService() {
             width!!,
             (height!! * 0.30f).toInt(),
             LAYOUT_TYPE!!,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            //WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            //WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            //WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         )
         overlayWindowLayoutParam?.gravity = Gravity.TOP or Gravity.START
@@ -236,6 +252,7 @@ class OverlayService : LifecycleService() {
         })
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun openCloseLayout(button: MaterialButton) {
         var drawable : Drawable?= null
         // layout is open, so shows close before click
@@ -243,19 +260,22 @@ class OverlayService : LifecycleService() {
         if(isOpen) {
             drawable = ContextCompat.getDrawable(minimizeBtn!!.context, R.drawable.ic_open_icon)
             Log.d("HI", "IS OPEN, WILL CLOSE")
-            //searchView?.visibility = View.GONE
-            //writeBtn?.visibility = View.GONE
-            //listView?.visibility = View.GONE
+            searchView?.visibility = View.GONE
+            searchView?.focusable = View.NOT_FOCUSABLE
+            searchView?.isFocusable = false
+            writeBtn?.visibility = View.GONE
+            searchListView?.visibility = View.GONE
             // hide softkeyboard
             val inputMethodManager: InputMethodManager =
                 getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
 
             // The soft keyboard slides back in
             inputMethodManager.hideSoftInputFromWindow(overlaySearchView?.applicationWindowToken, 0)
-
+            overlaySearchView?.clearFocus()
 
             // update view window to be as big as the open close button
             overlayWindowLayoutUpdateParam = overlayWindowLayoutParam as WindowManager.LayoutParams
+            overlayWindowLayoutUpdateParam?.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
             overlayWindowLayoutUpdateParam?.width = btnWidth!!.plus(paddingx!!).toInt()
             overlayWindowLayoutUpdateParam?.height = btnHeight!!.plus(paddingy!!).toInt()
             overlayWindowLayoutUpdateParam?.gravity = Gravity.TOP or Gravity.START
@@ -263,6 +283,9 @@ class OverlayService : LifecycleService() {
             overlayWindowLayoutUpdateParam?.y = 0
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
             if(detailIsOpen) {
+                detailBackBtn?.visibility = View.GONE
+                detailListView?.visibility = View.GONE
+                detailView?.clearFocus()
                 windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
             }
         }
@@ -272,15 +295,27 @@ class OverlayService : LifecycleService() {
             drawable = ContextCompat.getDrawable(minimizeBtn!!.context, R.drawable.ic_close_icon)
             // update view window to be the width of the screen and
             // height of up to X entries in the recyclerview
+
             overlayWindowLayoutUpdateParam = overlayWindowLayoutParam as WindowManager.LayoutParams
+            overlayWindowLayoutUpdateParam!!.flags = (overlayWindowLayoutParam!!.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv() )
             overlayWindowLayoutUpdateParam?.width = width!!
             overlayWindowLayoutUpdateParam?.height = (height!! * 0.30f).toInt()
             overlayWindowLayoutUpdateParam?.gravity = Gravity.TOP or Gravity.START
             overlayWindowLayoutUpdateParam?.x = 0
             overlayWindowLayoutUpdateParam?.y = 0
+
             windowManager!!.updateViewLayout(overlaySearchView, overlayWindowLayoutUpdateParam)
+
+            searchView?.visibility = View.VISIBLE
+            writeBtn?.visibility = View.VISIBLE
+            searchListView?.visibility = View.VISIBLE
+
+            searchView?.isFocusable = true
+            searchView?.focusable = View.FOCUSABLE
             if(detailIsOpen) {
                 windowManager!!.updateViewLayout(detailView, overlayWindowLayoutUpdateParam)
+                detailBackBtn?.visibility = View.VISIBLE
+                detailListView?.visibility = View.VISIBLE
             }
         }
         isOpen = !isOpen
@@ -325,6 +360,7 @@ class OverlayService : LifecycleService() {
 
                 // The window is removed from the screen
                 windowManager!!.removeView(detailView)
+                windowManager!!.removeView(overlaySearchView)
             }
 
             override fun onSingleClick() {

@@ -1,15 +1,30 @@
 package com.example.jdictoverlay.repository
 
+import android.text.Editable
 import android.text.TextUtils
 import android.util.Log
 import androidx.lifecycle.*
 import com.example.jdictoverlay.data.JDictDao
+import com.example.jdictoverlay.data.calculateScore
 import com.example.jdictoverlay.model.DictEntry
 import com.example.jdictoverlay.ui.CharacterConverter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 class JDictRepository (
     private val jDictDao: JDictDao
 ) {
+    // FTS STUFF
+    private val _searchResults = MutableLiveData<List<DictEntry>>()
+    val searchResults: LiveData<List<DictEntry>>
+        get() = _searchResults
+
+    val repoScope = CoroutineScope(Job() + Dispatchers.IO)
+
+
     private val searchStringLiveData = MutableLiveData<String>("") //we can add initial value directly in the constructor
 
     val mediatorLiveData = MediatorLiveData<List<DictEntry>>()
@@ -161,6 +176,27 @@ class JDictRepository (
         }
     }
 
+    private fun sanitizeSearchQuery(query: String?) : String {
+        if(query == null) {
+            return ""
+        }
+        val queryWithEscapeQuotes = query.replace(Regex.fromLiteral("\""), "\"\"")
+        return "*\"$queryWithEscapeQuotes\"*"
+    }
+
+    val scoredEntries: LiveData<List<DictEntry>> = Transformations.switchMap(searchStringLiveData) {
+            string ->
+        if (TextUtils.isEmpty(string)) {
+            jDictDao.getNothing().asLiveData()
+        } else {
+            val sanitizedQuery = sanitizeSearchQuery(string)
+            Log.d("Hi", "sanitizedQuery = $sanitizedQuery")
+            val test = jDictDao.search(sanitizedQuery)
+            Log.d("Hi", "search = ${test.value}")
+            test
+            }
+        }
+
 
     private fun mergeSearch(string: String) : LiveData<List<DictEntry>> {
        val searchResults : List<DictEntry> = mediatorLiveData.value ?: listOf<DictEntry>()
@@ -186,6 +222,12 @@ class JDictRepository (
 
     fun searchChanged(string: String) {
         searchStringLiveData.value = string
-        Log.d("VIEWMODEL", "SEARCH CHANGED")
+        /*
+        if(string == null) {
+            searchStringLiveData.value = ""
+        }
+        Log.d("HI", "SEARCH CHANGED")
+        val queryWithEscapeQuotes = string.replace(Regex.fromLiteral("\""), "\"\"")
+        searchStringLiveData.value = "*\"$queryWithEscapeQuotes\"*" */
     }
 }

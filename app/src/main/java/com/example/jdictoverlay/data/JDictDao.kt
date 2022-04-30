@@ -58,6 +58,28 @@ interface JDictDao {
             "OR LOWER(gloss) LIKE LOWER('%' || :input || '%') ")
     fun searchAll(input: String) : LiveData<List<DictEntry>>
 
+    // FTS Search
+    @Query("""
+        SELECT * 
+        FROM jdict_database
+        JOIN jdict_database_fts ON jdict_database.kanji = jdict_database_fts.kanji
+        AND jdict_database.reading = jdict_database_fts.reading
+        AND jdict_database.gloss = jdict_database_fts.gloss
+        WHERE jdict_database_fts MATCH :query
+    """)
+    fun search(query: String): LiveData<List<DictEntry>>
+
+    // FTS Search
+    @Query("""
+        SELECT *, matchinfo(jdict_database_fts) as matchInfo
+        FROM jdict_database
+        JOIN jdict_database_fts ON jdict_database.kanji = jdict_database_fts.kanji
+        AND jdict_database.reading = jdict_database_fts.reading
+        AND jdict_database.gloss = jdict_database_fts.gloss
+        WHERE jdict_database_fts MATCH :query
+    """)
+    fun searchWithMatchInfo(query: String): List<DictEntryWithMatchInfo>
+
     @Insert(onConflict = REPLACE)
     fun insertEntry(entry: DictEntry)
 

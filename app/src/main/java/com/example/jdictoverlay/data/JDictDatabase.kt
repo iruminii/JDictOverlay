@@ -11,7 +11,7 @@ import com.example.jdictoverlay.model.*
 import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 
-@Database (entities = [DictEntry::class], version = 1, exportSchema = false)
+@Database (entities = [DictEntry::class, DictEntryFTS::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class JDictDatabase : RoomDatabase() {
     abstract fun jDictDao() : JDictDao
@@ -36,6 +36,7 @@ abstract class JDictDatabase : RoomDatabase() {
                             Executors.newSingleThreadExecutor().execute() {
                                 INSTANCE?.fillDatabase()
                             }
+                            db.execSQL("INSERT INTO jdict_database_fts(jdict_database_fts) VALUES ('rebuild')")
                         }
                     })
                     //.createFromAsset("databases/")
@@ -54,6 +55,7 @@ abstract class JDictDatabase : RoomDatabase() {
         dbScope.launch {
             val fileData = ImportJData().getDataFromFile()
             jDictDao().insertAllEntries(fileData)
+            Log.d("Hi", "inserted")
         }
     }
 }
