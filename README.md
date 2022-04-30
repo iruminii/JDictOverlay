@@ -1,3 +1,3 @@
 "# JDictOverlay" 
 
-![GIF](https://github.com/iruminii/JDictOverlay/blob/image/OverlayGIF.gif?raw=true)
+![GIF](https://github.com/iruminii/JDictOverlay/blob/main/image/OverlayGIF.gif?raw=true)
