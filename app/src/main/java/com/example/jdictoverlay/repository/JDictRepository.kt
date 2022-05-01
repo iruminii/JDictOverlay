@@ -180,8 +180,9 @@ class JDictRepository (
         if(query == null) {
             return ""
         }
-        val queryWithEscapeQuotes = query.replace(Regex.fromLiteral("\""), "\"\"")
-        return "*\"$queryWithEscapeQuotes\"*"
+        //val queryWithEscapeQuotes = query.replace(Regex.fromLiteral("\""), "\"\"")
+        //return "*\"$query\"*"
+        return "*\"$query\"*"
     }
 
     val scoredEntries: LiveData<List<DictEntry>> = Transformations.switchMap(searchStringLiveData) {
@@ -191,9 +192,7 @@ class JDictRepository (
         } else {
             val sanitizedQuery = sanitizeSearchQuery(string)
             Log.d("Hi", "sanitizedQuery = $sanitizedQuery")
-            val test = jDictDao.search(sanitizedQuery)
-            Log.d("Hi", "search = ${test.value}")
-            test
+            jDictDao.search(sanitizedQuery)
             }
         }
 
@@ -221,13 +220,13 @@ class JDictRepository (
     }
 
     fun searchChanged(string: String) {
-        searchStringLiveData.value = string
-        /*
+        //searchStringLiveData.value = string
+
         if(string == null) {
             searchStringLiveData.value = ""
         }
-        Log.d("HI", "SEARCH CHANGED")
-        val queryWithEscapeQuotes = string.replace(Regex.fromLiteral("\""), "\"\"")
-        searchStringLiveData.value = "*\"$queryWithEscapeQuotes\"*" */
+        //val queryWithEscapedQuotes = string.replace(Regex.fromLiteral("\""), "\"\"")
+        val escaped = "*\"$string\"*"
+        searchStringLiveData.value = string
     }
 }

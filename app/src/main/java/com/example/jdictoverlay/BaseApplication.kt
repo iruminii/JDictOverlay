@@ -16,5 +16,6 @@ class BaseApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("Hi", "DB ON CREATE BASE APP")
     }
 }

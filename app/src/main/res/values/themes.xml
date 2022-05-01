@@ -13,4 +13,13 @@
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
         <!-- Customize your theme here. -->
     </style>
+
+    <style name="SplashTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="colorPrimary">@color/rose</item>
+        <item name="colorPrimaryDark">@color/dkpink</item>
+        <item name="colorAccent">@color/pink</item>
+        <item name="android:statusBarColor">@color/lightrose</item>
+    </style>
+
 </resources>
