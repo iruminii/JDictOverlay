@@ -1,6 +1,9 @@
-"# JDictOverlay" 
+# Japanese English Dictionary Overlay App 
 
-Using :
+Allows easier translation without switching windows on a single device.
+For when you have access to only one device/monitor.
+
+#### Using :
 MLKit Digital Ink
 Room Database
 JMdict-EDICT Dictionary Project (JMdict_e_exampl)
